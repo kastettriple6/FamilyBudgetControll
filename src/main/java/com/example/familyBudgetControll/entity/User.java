@@ -1,22 +1,37 @@
 package com.example.familyBudgetControll.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import javax.persistence.*;
 import java.util.Collection;
+import java.util.Set;
 
 @Getter
 @Setter
 @Entity
-public class User implements Comparable<User>{
+public class User {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    private String userName;
+    private String password;
+    @Transient
+    private String passwordConfirm;
+    @Column
     private String firstName;
+    @Column
     private String lastName;
+
+    @JsonIgnore
+    @OneToOne
+    @JoinColumn(name = "limit_id")
     private WithdrawLimit limit;
 
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "family_id")
     private Family family;
@@ -30,8 +45,7 @@ public class User implements Comparable<User>{
                     name = "role_id", referencedColumnName = "id"))
     private Collection<Role> roles;
 
-    @Override
-    public int compareTo(User o) {
-        return firstName.compareTo(o.getFirstName());
+    public boolean isActive() {
+        return true;
     }
 }

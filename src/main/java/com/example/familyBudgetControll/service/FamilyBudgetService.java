@@ -2,24 +2,21 @@ package com.example.familyBudgetControll.service;
 
 import com.example.familyBudgetControll.dto.FamilyDTO;
 import com.example.familyBudgetControll.dto.UserDTO;
+import com.example.familyBudgetControll.dto.WithdrawLimitDTO;
 import com.example.familyBudgetControll.entity.Family;
 import com.example.familyBudgetControll.entity.Role;
 import com.example.familyBudgetControll.entity.User;
 import com.example.familyBudgetControll.entity.WithdrawLimit;
-import com.example.familyBudgetControll.repository.FamilyRepository;
-import com.example.familyBudgetControll.repository.PrivilegeRepository;
-import com.example.familyBudgetControll.repository.RoleRepository;
-import com.example.familyBudgetControll.repository.UserRepository;
+import com.example.familyBudgetControll.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
-import java.util.Collection;
+import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class FamilyBudgetService {
@@ -32,31 +29,37 @@ public class FamilyBudgetService {
     private RoleRepository roleRepository;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private WithdrawLimitRepository limitRepository;
 
-    public Optional<User> login(Long id) {
-        return userRepository.findById(id);
-    }
-
-    public User createUser(UserDTO userDTO) {
+    public User registration(UserDTO userDTO){
         User userEntity = new User();
+        userEntity.setUserName(userDTO.getUserName());
+        userEntity.setPassword(userDTO.getPassword());
+        userEntity.setPasswordConfirm(userDTO.getPasswordConfirm());
         userEntity.setFirstName(userDTO.getFirstName());
         userEntity.setLastName(userDTO.getLastName());
-        return userRepository.save(userEntity);
+        if(userEntity.getPasswordConfirm().equals(userDTO.getPasswordConfirm())){
+            userRepository.save(userEntity);
+        } else{
+            logger.error("password confirmation failed");
+        }
+        return userEntity;
     }
 
     public List<User> putUserToFamilyList(Long userId, Long familyId) {
         User userEntity = userRepository.findById(userId).orElseThrow(IllegalArgumentException::new);
         Family familyEntity = familyRepository.findById(familyId).orElseThrow(IllegalArgumentException::new);
-        List<User> usersInFamily = familyEntity.getUsers();
-        usersInFamily.add(userEntity);
-        familyEntity.setUsers(usersInFamily);
-        familyRepository.save(familyEntity);
-        return usersInFamily;
+        userEntity.setFamily(familyEntity);
+        userRepository.save(userEntity);
+        return familyEntity.getUsers();
     }
 
     public Family createFamily(FamilyDTO familyDTO) {
         Family familyEntity = new Family();
         familyEntity.setName(familyDTO.getName());
+        familyEntity.setBalance(0d);
+        familyEntity.setSumOfWithdrawsByDay(0d);
         return familyRepository.save(familyEntity);
     }
 
@@ -67,7 +70,7 @@ public class FamilyBudgetService {
             public int compare(User o1, User o2) {
                 int fComp = o1.getFirstName().compareTo(o2.getFirstName());
 
-                if(fComp != 0) {
+                if (fComp != 0) {
                     return fComp;
                 }
 
@@ -81,13 +84,13 @@ public class FamilyBudgetService {
         return familyMembers;
     }
 
-    public Float checkFamilyBalance(Long familyId) {
+    public Double checkFamilyBalance(Long familyId) {
         Family familyEntity = familyRepository.findById(familyId).orElseThrow(IllegalArgumentException::new);
         return familyEntity.getBalance();
     }
 
     @Transactional
-    public Float refillFamilyBalance(Float sumToRefill, Long familyId) {
+    public Double refillFamilyBalance(Double sumToRefill, Long familyId) {
         Family familyEntity = familyRepository.findById(familyId).orElseThrow(IllegalArgumentException::new);
         familyEntity.setBalance(familyEntity.getBalance() + sumToRefill);
         familyRepository.save(familyEntity);
@@ -95,46 +98,70 @@ public class FamilyBudgetService {
     }
 
     @Transactional
-    public Float withdraw(Long userId, Float sumToWithdraw) {
+    public Double withdraw(Long userId, Double sumToWithdraw) {
         User userEntity = userRepository.findById(userId).orElseThrow(IllegalArgumentException::new);
+        Family familyEntity = userEntity.getFamily();
         if (userEntity.getLimit().getLimitForSingleWithdraw() < sumToWithdraw) {
             logger.error("limit exceeded");
-            if (userEntity.getLimit().getLimitPerDay() < sumToWithdraw) {
+            if (userEntity.getLimit().getLimitPerDay() < familyEntity.getSumOfWithdrawsByDay()) {
                 logger.error("limit exceeded");
-                if (userEntity.getLimit().getLimitByDate() < sumToWithdraw) {
-                    logger.error("limit exceeded");
-                }
             }
         } else {
-            Family familyEntity = userEntity.getFamily();
-            familyEntity.setBalance(familyEntity.getBalance() - sumToWithdraw);
-            familyRepository.save(familyEntity);
-            return familyEntity.getBalance();
+            if (userEntity.getLimit().getDateForLimit().equals(LocalDate.now())) {
+                if (userEntity.getLimit().getLimitByDate() < familyEntity.getSumOfWithdrawsByDay()) {
+                    logger.error("limit exceeded");
+                }
+            } else {
+                familyEntity.setBalance(familyEntity.getBalance() - sumToWithdraw);
+                familyEntity.setSumOfWithdrawsByDay(familyEntity.getSumOfWithdrawsByDay() + sumToWithdraw);
+                familyRepository.save(familyEntity);
+                return familyEntity.getBalance();
+            }
         }
         return userEntity.getFamily().getBalance();
     }
 
-    public WithdrawLimit setWithdrawLimitForFamily(Long familyId, WithdrawLimit limit) {
+    public WithdrawLimit setWithdrawLimitForFamily(Long familyId, WithdrawLimitDTO limit) {
+
         Family familyEntity = familyRepository.findById(familyId).orElseThrow(IllegalArgumentException::new);
-        familyEntity.setLimit(limit);
+        WithdrawLimit limitForFamily = new WithdrawLimit();
+        limitForFamily.setDateForLimit(limit.getDateForLimit());
+        limitForFamily.setLimitForSingleWithdraw(limit.getLimitForSingleWithdraw());
+        limitForFamily.setLimitPerDay(limit.getLimitPerDay());
+        limitForFamily.setLimitByDate(limit.getLimitByDate());
+        familyEntity.setLimit(limitForFamily);
         familyRepository.save(familyEntity);
         return familyEntity.getLimit();
     }
 
-    public WithdrawLimit setWithdrawLimitForUser(Long userId, WithdrawLimit limit) {
+    public WithdrawLimit setWithdrawLimitForUser(Long userId, WithdrawLimitDTO limit) {
         User userEntity = userRepository.findById(userId).orElseThrow(IllegalArgumentException::new);
-        userEntity.setLimit(limit);
+        WithdrawLimit limitForUser = new WithdrawLimit();
+        limitForUser.setDateForLimit(limit.getDateForLimit());
+        limitForUser.setLimitForSingleWithdraw(limit.getLimitForSingleWithdraw());
+        limitForUser.setLimitPerDay(limit.getLimitPerDay());
+        limitForUser.setLimitByDate(limit.getLimitByDate());
+
+        userEntity.setLimit(limitForUser);
+
         userRepository.save(userEntity);
         return userEntity.getLimit();
     }
 
-    public WithdrawLimit setFamilyLimitByAdmin(Long userId, WithdrawLimit limit) {
+    public WithdrawLimit setFamilyLimitByAdmin(Long userId, WithdrawLimitDTO limit) {
         User familyAdmin = userRepository.findById(userId).orElseThrow(IllegalArgumentException::new);
         Role neededRole = roleRepository.findByName("FAMILY_ADMIN");
         Family neededFamily = familyRepository.findById(familyAdmin.getFamily().getId()).orElseThrow(IllegalArgumentException::new);
         if (familyAdmin.getRoles().contains(neededRole)) {
             if (familyAdmin.getFamily().equals(neededFamily)) {
-                neededFamily.setLimit(limit);
+                WithdrawLimit limitForFamily = new WithdrawLimit();
+                limitForFamily.setDateForLimit(limit.getDateForLimit());
+                limitForFamily.setLimitForSingleWithdraw(limit.getLimitForSingleWithdraw());
+                limitForFamily.setLimitPerDay(limit.getLimitPerDay());
+                limitForFamily.setLimitByDate(limit.getLimitByDate());
+
+                neededFamily.setLimit(limitForFamily);
+
                 familyRepository.save(neededFamily);
             }
         } else {
@@ -143,13 +170,20 @@ public class FamilyBudgetService {
         return neededFamily.getLimit();
     }
 
-    public WithdrawLimit setLimitForUserByAdmin(Long userId, Long adminId, WithdrawLimit limit) {
+    public WithdrawLimit setLimitForUserByAdmin(Long userId, Long adminId, WithdrawLimitDTO limit) {
         User admin = userRepository.findById(adminId).orElseThrow(IllegalArgumentException::new);
         User userToSetLimit = userRepository.findById(userId).orElseThrow(IllegalArgumentException::new);
         Role neededRoleForAdmin = roleRepository.findByName("FAMILY_ADMIN");
         if (admin.getRoles().contains(neededRoleForAdmin)) {
             if (admin.getFamily().equals(userToSetLimit.getFamily())) {
-                userToSetLimit.setLimit(limit);
+                WithdrawLimit limitForUser = new WithdrawLimit();
+                limitForUser.setDateForLimit(limit.getDateForLimit());
+                limitForUser.setLimitForSingleWithdraw(limit.getLimitForSingleWithdraw());
+                limitForUser.setLimitPerDay(limit.getLimitPerDay());
+                limitForUser.setLimitByDate(limit.getLimitByDate());
+
+                userToSetLimit.setLimit(limitForUser);
+
                 userRepository.save(userToSetLimit);
             } else {
                 logger.error("user associated with other family");
@@ -158,5 +192,9 @@ public class FamilyBudgetService {
             logger.error("access denied");
         }
         return userToSetLimit.getLimit();
+    }
+
+    public List<Family> showAllFamilies() {
+        return familyRepository.findAll();
     }
 }

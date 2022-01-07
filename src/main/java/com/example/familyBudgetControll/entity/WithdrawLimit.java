@@ -3,13 +3,25 @@ package com.example.familyBudgetControll.entity;
 import lombok.Getter;
 import lombok.Setter;
 
+import javax.persistence.*;
+import java.time.LocalDate;
+
 @Getter
 @Setter
+@Entity
 public class WithdrawLimit {
-    private Float limitForSingleWithdraw;
-    private Float limitPerDay;
-    private Float limitByDate;
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
+    private LocalDate dateForLimit;
+    private Double limitForSingleWithdraw;
+    private Double limitPerDay;
+    private Double limitByDate;
 
-    public WithdrawLimit(WithdrawLimit limit) {
-    }
+    @OneToOne(mappedBy = "limit")
+    private User user;
+
+    @OneToOne(mappedBy = "limit")
+    private Family family;
+
 }

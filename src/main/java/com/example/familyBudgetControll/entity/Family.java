@@ -11,10 +11,17 @@ import java.util.List;
 @Entity
 public class Family {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
+    @Column
     private String name;
-    private Float balance;
+    @Column
+    private Double balance;
+    @Column
+    private Double sumOfWithdrawsByDay;
+
+    @OneToOne
+    @JoinColumn(name = "limit_id")
     private WithdrawLimit limit;
 
     @OneToMany(mappedBy = "family")
