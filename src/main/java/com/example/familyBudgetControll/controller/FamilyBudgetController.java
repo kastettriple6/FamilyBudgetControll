@@ -4,7 +4,7 @@ import com.example.familyBudgetControll.dto.FamilyDTO;
 import com.example.familyBudgetControll.dto.UserDTO;
 import com.example.familyBudgetControll.dto.WithdrawLimitDTO;
 import com.example.familyBudgetControll.entity.Family;
-import com.example.familyBudgetControll.entity.User;
+import com.example.familyBudgetControll.entity.Users;
 import com.example.familyBudgetControll.entity.WithdrawLimit;
 import com.example.familyBudgetControll.service.FamilyBudgetService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +21,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 
 @RestController
-@RequestMapping("/fbc")
 public class FamilyBudgetController {
 
     @Autowired
@@ -32,10 +31,10 @@ public class FamilyBudgetController {
                             @RequestParam(value = "logout", required = false) String logout,
                             Model model) {
         String errorMessge = null;
-        if(error != null) {
+        if (error != null) {
             errorMessge = "Username or Password is incorrect !!";
         }
-        if(logout != null) {
+        if (logout != null) {
             errorMessge = "You have been successfully logged out !!";
         }
         model.addAttribute("errorMessage", errorMessge);
@@ -43,26 +42,27 @@ public class FamilyBudgetController {
     }
 
     @GetMapping("/logout")
-    public String logoutPage (HttpServletRequest request, HttpServletResponse response) {
+    public String logoutPage(HttpServletRequest request, HttpServletResponse response) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null){
+        if (auth != null) {
             new SecurityContextLogoutHandler().logout(request, response, auth);
         }
         return "redirect:/login?logout=true";
     }
+
     @PostMapping("/registration")
     @ResponseBody
-    public User registration(UserDTO userDTO) {
+    public Users registration(UserDTO userDTO) {
         return service.registration(userDTO);
     }
 
     @PutMapping("/family{familyId}")
-    public List<User> addUserToFamily(Long userId, @PathVariable Long familyId) {
+    public List<Users> addUserToFamily(Long userId, @PathVariable Long familyId) {
         return service.putUserToFamilyList(userId, familyId);
     }
 
     @GetMapping("/families")
-    public List<Family> displayFamilies(){
+    public List<Family> displayFamilies() {
         return service.showAllFamilies();
     }
 
@@ -74,7 +74,7 @@ public class FamilyBudgetController {
 
     @GetMapping("/family{familyId}")
     @ResponseBody
-    public List<User> displayFamilyList(@PathVariable Long familyId) {
+    public List<Users> displayFamilyList(@PathVariable Long familyId) {
         return service.checkFamilyList(familyId);
     }
 

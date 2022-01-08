@@ -5,7 +5,7 @@ import com.example.familyBudgetControll.dto.UserDTO;
 import com.example.familyBudgetControll.dto.WithdrawLimitDTO;
 import com.example.familyBudgetControll.entity.Family;
 import com.example.familyBudgetControll.entity.Role;
-import com.example.familyBudgetControll.entity.User;
+import com.example.familyBudgetControll.entity.Users;
 import com.example.familyBudgetControll.entity.WithdrawLimit;
 import com.example.familyBudgetControll.repository.*;
 import org.slf4j.Logger;
@@ -32,8 +32,8 @@ public class FamilyBudgetService {
     @Autowired
     private WithdrawLimitRepository limitRepository;
 
-    public User registration(UserDTO userDTO){
-        User userEntity = new User();
+    public Users registration(UserDTO userDTO){
+        Users userEntity = new Users();
         userEntity.setUserName(userDTO.getUserName());
         userEntity.setPassword(userDTO.getPassword());
         userEntity.setPasswordConfirm(userDTO.getPasswordConfirm());
@@ -47,8 +47,8 @@ public class FamilyBudgetService {
         return userEntity;
     }
 
-    public List<User> putUserToFamilyList(Long userId, Long familyId) {
-        User userEntity = userRepository.findById(userId).orElseThrow(IllegalArgumentException::new);
+    public List<Users> putUserToFamilyList(Long userId, Long familyId) {
+        Users userEntity = userRepository.findById(userId).orElseThrow(IllegalArgumentException::new);
         Family familyEntity = familyRepository.findById(familyId).orElseThrow(IllegalArgumentException::new);
         userEntity.setFamily(familyEntity);
         userRepository.save(userEntity);
@@ -63,11 +63,11 @@ public class FamilyBudgetService {
         return familyRepository.save(familyEntity);
     }
 
-    public List<User> checkFamilyList(Long familyId) {
+    public List<Users> checkFamilyList(Long familyId) {
         Family familyEntity = familyRepository.findById(familyId).orElseThrow(IllegalArgumentException::new);
-        Comparator<User> userComparator = new Comparator<User>() {
+        Comparator<Users> userComparator = new Comparator<Users>() {
             @Override
-            public int compare(User o1, User o2) {
+            public int compare(Users o1, Users o2) {
                 int fComp = o1.getFirstName().compareTo(o2.getFirstName());
 
                 if (fComp != 0) {
@@ -79,7 +79,7 @@ public class FamilyBudgetService {
                 return r1.compareTo(r2);
             }
         };
-        List<User> familyMembers = familyEntity.getUsers();
+        List<Users> familyMembers = familyEntity.getUsers();
         familyMembers.sort(userComparator);
         return familyMembers;
     }
@@ -99,7 +99,7 @@ public class FamilyBudgetService {
 
     @Transactional
     public Double withdraw(Long userId, Double sumToWithdraw) {
-        User userEntity = userRepository.findById(userId).orElseThrow(IllegalArgumentException::new);
+        Users userEntity = userRepository.findById(userId).orElseThrow(IllegalArgumentException::new);
         Family familyEntity = userEntity.getFamily();
         if (userEntity.getLimit().getLimitForSingleWithdraw() < sumToWithdraw) {
             logger.error("limit exceeded");
@@ -135,7 +135,7 @@ public class FamilyBudgetService {
     }
 
     public WithdrawLimit setWithdrawLimitForUser(Long userId, WithdrawLimitDTO limit) {
-        User userEntity = userRepository.findById(userId).orElseThrow(IllegalArgumentException::new);
+        Users userEntity = userRepository.findById(userId).orElseThrow(IllegalArgumentException::new);
         WithdrawLimit limitForUser = new WithdrawLimit();
         limitForUser.setDateForLimit(limit.getDateForLimit());
         limitForUser.setLimitForSingleWithdraw(limit.getLimitForSingleWithdraw());
@@ -149,7 +149,7 @@ public class FamilyBudgetService {
     }
 
     public WithdrawLimit setFamilyLimitByAdmin(Long userId, WithdrawLimitDTO limit) {
-        User familyAdmin = userRepository.findById(userId).orElseThrow(IllegalArgumentException::new);
+        Users familyAdmin = userRepository.findById(userId).orElseThrow(IllegalArgumentException::new);
         Role neededRole = roleRepository.findByName("FAMILY_ADMIN");
         Family neededFamily = familyRepository.findById(familyAdmin.getFamily().getId()).orElseThrow(IllegalArgumentException::new);
         if (familyAdmin.getRoles().contains(neededRole)) {
@@ -171,8 +171,8 @@ public class FamilyBudgetService {
     }
 
     public WithdrawLimit setLimitForUserByAdmin(Long userId, Long adminId, WithdrawLimitDTO limit) {
-        User admin = userRepository.findById(adminId).orElseThrow(IllegalArgumentException::new);
-        User userToSetLimit = userRepository.findById(userId).orElseThrow(IllegalArgumentException::new);
+        Users admin = userRepository.findById(adminId).orElseThrow(IllegalArgumentException::new);
+        Users userToSetLimit = userRepository.findById(userId).orElseThrow(IllegalArgumentException::new);
         Role neededRoleForAdmin = roleRepository.findByName("FAMILY_ADMIN");
         if (admin.getRoles().contains(neededRoleForAdmin)) {
             if (admin.getFamily().equals(userToSetLimit.getFamily())) {

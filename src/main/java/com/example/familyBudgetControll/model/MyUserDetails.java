@@ -1,27 +1,21 @@
 package com.example.familyBudgetControll.model;
 
 import com.example.familyBudgetControll.entity.Role;
-import com.example.familyBudgetControll.entity.User;
-import com.example.familyBudgetControll.service.UserDetailServiceImpl;
+import com.example.familyBudgetControll.entity.Users;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
 
 public class MyUserDetails implements UserDetails {
-    private String userName;
-    private String password;
+    private final String userName;
+    private final String password;
     private boolean active;
-    private Collection<Role> authorities;
+    private final Collection<Role> authorities;
 
-    public MyUserDetails(User user) {
+    public MyUserDetails(Users user) {
         this.userName = user.getUserName();
         this.password = user.getPassword();
-        this.active = user.isActive();
         this.authorities = user.getRoles();
     }
 

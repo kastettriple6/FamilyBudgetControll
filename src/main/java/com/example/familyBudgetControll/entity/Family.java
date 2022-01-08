@@ -25,5 +25,5 @@ public class Family {
     private WithdrawLimit limit;
 
     @OneToMany(mappedBy = "family")
-    private List<User> users;
+    private List<Users> users;
 }

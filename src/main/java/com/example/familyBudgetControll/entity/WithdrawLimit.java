@@ -19,7 +19,7 @@ public class WithdrawLimit {
     private Double limitByDate;
 
     @OneToOne(mappedBy = "limit")
-    private User user;
+    private Users user;
 
     @OneToOne(mappedBy = "limit")
     private Family family;
