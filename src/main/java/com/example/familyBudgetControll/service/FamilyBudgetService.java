@@ -11,12 +11,15 @@ import com.example.familyBudgetControll.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class FamilyBudgetService {
@@ -31,20 +34,34 @@ public class FamilyBudgetService {
     private UserRepository userRepository;
     @Autowired
     private WithdrawLimitRepository limitRepository;
+    @Autowired
+    private PasswordEncoder encoder;
 
-    public Users registration(UserDTO userDTO){
+    public Optional<Users> registration(UserDTO userDTO) {
         Users userEntity = new Users();
+        userEntity.setId(userDTO.getId());
         userEntity.setUserName(userDTO.getUserName());
-        userEntity.setPassword(userDTO.getPassword());
-        userEntity.setPasswordConfirm(userDTO.getPasswordConfirm());
+        userEntity.setPassword(encoder.encode(userDTO.getPassword()));
         userEntity.setFirstName(userDTO.getFirstName());
         userEntity.setLastName(userDTO.getLastName());
-        if(userEntity.getPasswordConfirm().equals(userDTO.getPasswordConfirm())){
-            userRepository.save(userEntity);
-        } else{
-            logger.error("password confirmation failed");
-        }
-        return userEntity;
+
+        WithdrawLimit limit = new WithdrawLimit();
+        limit.setDateForLimit(LocalDate.of(1970, 1, 1));
+        limit.setLimitPerDay(1000d);
+        limit.setLimitForSingleWithdraw(1000d);
+        limit.setLimitByDate(1000d);
+
+        limitRepository.save(limit);
+
+        userEntity.setLimit(limit);
+
+        roleRepository.save(new Role("USER"));
+
+        userEntity.setRoles(Collections.singletonList(roleRepository.findByName("USER")));
+
+        userRepository.save(userEntity);
+
+        return userRepository.findByUserName(userEntity.getUserName());
     }
 
     public List<Users> putUserToFamilyList(Long userId, Long familyId) {
@@ -129,6 +146,9 @@ public class FamilyBudgetService {
         limitForFamily.setLimitForSingleWithdraw(limit.getLimitForSingleWithdraw());
         limitForFamily.setLimitPerDay(limit.getLimitPerDay());
         limitForFamily.setLimitByDate(limit.getLimitByDate());
+
+        limitRepository.save(limitForFamily);
+
         familyEntity.setLimit(limitForFamily);
         familyRepository.save(familyEntity);
         return familyEntity.getLimit();
@@ -142,55 +162,41 @@ public class FamilyBudgetService {
         limitForUser.setLimitPerDay(limit.getLimitPerDay());
         limitForUser.setLimitByDate(limit.getLimitByDate());
 
+        limitRepository.save(limitForUser);
+
         userEntity.setLimit(limitForUser);
 
         userRepository.save(userEntity);
         return userEntity.getLimit();
     }
 
-    public WithdrawLimit setFamilyLimitByAdmin(Long userId, WithdrawLimitDTO limit) {
-        Users familyAdmin = userRepository.findById(userId).orElseThrow(IllegalArgumentException::new);
-        Role neededRole = roleRepository.findByName("FAMILY_ADMIN");
-        Family neededFamily = familyRepository.findById(familyAdmin.getFamily().getId()).orElseThrow(IllegalArgumentException::new);
-        if (familyAdmin.getRoles().contains(neededRole)) {
-            if (familyAdmin.getFamily().equals(neededFamily)) {
-                WithdrawLimit limitForFamily = new WithdrawLimit();
-                limitForFamily.setDateForLimit(limit.getDateForLimit());
-                limitForFamily.setLimitForSingleWithdraw(limit.getLimitForSingleWithdraw());
-                limitForFamily.setLimitPerDay(limit.getLimitPerDay());
-                limitForFamily.setLimitByDate(limit.getLimitByDate());
+    public WithdrawLimit setFamilyLimitByAdmin(Long familyId, WithdrawLimitDTO limit) {
+        Family neededFamily = familyRepository.findById(familyId).orElseThrow(IllegalArgumentException::new);
+        WithdrawLimit limitForFamily = new WithdrawLimit();
+        limitForFamily.setDateForLimit(limit.getDateForLimit());
+        limitForFamily.setLimitForSingleWithdraw(limit.getLimitForSingleWithdraw());
+        limitForFamily.setLimitPerDay(limit.getLimitPerDay());
+        limitForFamily.setLimitByDate(limit.getLimitByDate());
 
-                neededFamily.setLimit(limitForFamily);
+        neededFamily.setLimit(limitForFamily);
 
-                familyRepository.save(neededFamily);
-            }
-        } else {
-            logger.error("access_denied");
-        }
+        familyRepository.save(neededFamily);
+
         return neededFamily.getLimit();
     }
 
-    public WithdrawLimit setLimitForUserByAdmin(Long userId, Long adminId, WithdrawLimitDTO limit) {
-        Users admin = userRepository.findById(adminId).orElseThrow(IllegalArgumentException::new);
+    public WithdrawLimit setLimitForUserByAdmin(Long userId, WithdrawLimitDTO limit) {
         Users userToSetLimit = userRepository.findById(userId).orElseThrow(IllegalArgumentException::new);
-        Role neededRoleForAdmin = roleRepository.findByName("FAMILY_ADMIN");
-        if (admin.getRoles().contains(neededRoleForAdmin)) {
-            if (admin.getFamily().equals(userToSetLimit.getFamily())) {
-                WithdrawLimit limitForUser = new WithdrawLimit();
-                limitForUser.setDateForLimit(limit.getDateForLimit());
-                limitForUser.setLimitForSingleWithdraw(limit.getLimitForSingleWithdraw());
-                limitForUser.setLimitPerDay(limit.getLimitPerDay());
-                limitForUser.setLimitByDate(limit.getLimitByDate());
+        WithdrawLimit limitForUser = new WithdrawLimit();
+        limitForUser.setDateForLimit(limit.getDateForLimit());
+        limitForUser.setLimitForSingleWithdraw(limit.getLimitForSingleWithdraw());
+        limitForUser.setLimitPerDay(limit.getLimitPerDay());
+        limitForUser.setLimitByDate(limit.getLimitByDate());
 
-                userToSetLimit.setLimit(limitForUser);
+        userToSetLimit.setLimit(limitForUser);
 
-                userRepository.save(userToSetLimit);
-            } else {
-                logger.error("user associated with other family");
-            }
-        } else {
-            logger.error("access denied");
-        }
+        userRepository.save(userToSetLimit);
+
         return userToSetLimit.getLimit();
     }
 

@@ -27,8 +27,7 @@ public class Role implements GrantedAuthority {
                     name = "privilege_id", referencedColumnName = "id"))
     private Collection<Privilege> privileges;
 
-    public Role(Long l, String role_user) {
-
+    public Role(String role_user) {
     }
 
     @Override

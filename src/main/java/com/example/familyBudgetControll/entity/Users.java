@@ -14,12 +14,10 @@ import java.util.List;
 @Entity
 public class Users {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
     private String userName;
     private String password;
-    @Transient
-    private String passwordConfirm;
     @Column
     private String firstName;
     @Column

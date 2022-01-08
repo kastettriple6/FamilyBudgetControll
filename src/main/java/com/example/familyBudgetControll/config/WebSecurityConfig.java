@@ -2,7 +2,6 @@ package com.example.familyBudgetControll.config;
 
 import com.example.familyBudgetControll.service.UserDetailServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -13,7 +12,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
-@EnableConfigurationProperties
 @EnableWebSecurity
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
@@ -25,7 +23,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         http
                 .authorizeRequests()
                 .antMatchers("/registration").permitAll()
-                .antMatchers("/**").hasAnyRole("USER", "FAMILY_ADMIN", "GLOBAL_ADMIN")
+                .antMatchers("/**").permitAll()
+                .antMatchers("/user").hasAnyRole("USER", "FAMILY_ADMIN", "GLOBAL_ADMIN")
                 .antMatchers("/fa").hasAnyRole("FAMILY_ADMIN", "GLOBAL_ADMIN")
                 .antMatchers("/ga").hasRole("GLOBAL_ADMIN")
                 .and()
@@ -43,6 +42,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .and().sessionManagement().disable()
                 .csrf()
                 .disable();
+
     }
 
     @Bean
