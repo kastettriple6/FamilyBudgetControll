@@ -1,5 +1,5 @@
 # FamilyBudgetControll application
-Еhis application is designed to control the family budget by setting limits for both - the **USER** and the **FAMILY**, by the _FAMILY ADMINISTRATOR_ and the _GLOBAL ADMINISTRATOR_. 
+This application is designed to control the family budget by setting limits for both - the **USER** and the **FAMILY**, by the _FAMILY ADMINISTRATOR_ and the _GLOBAL ADMINISTRATOR_. 
 Access to the methods of managing the _limits_ is distributed among the administrator _roles_ - the **global administrator** has the _highest_ access.
 
 ## RUN
