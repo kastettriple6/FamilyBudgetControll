@@ -12,19 +12,17 @@ import java.util.List;
 @Getter
 @Setter
 @Entity
+@Table(name = "users")
 public class Users {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
+    @Column(name = "username")
     private String userName;
+    @Column(name = "password")
     private String password;
-    @Column
-    private String firstName;
-    @Column
-    private String lastName;
 
     @JsonIgnore
-    @OneToOne
+    @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "limit_id")
     private WithdrawLimit limit;
 

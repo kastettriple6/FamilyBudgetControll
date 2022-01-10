@@ -1,5 +1,6 @@
 package com.example.familyBudgetControll.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -9,18 +10,17 @@ import java.util.List;
 @Getter
 @Setter
 @Entity
+@Table(name = "family")
 public class Family {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
-    @Column
     private String name;
-    @Column
     private Double balance;
-    @Column
     private Double sumOfWithdrawsByDay;
 
-    @OneToOne
+    @JsonIgnore
+    @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "limit_id")
     private WithdrawLimit limit;
 

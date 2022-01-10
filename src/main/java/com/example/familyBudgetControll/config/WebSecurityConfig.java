@@ -22,14 +22,14 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity http) throws Exception {
         http
                 .authorizeRequests()
-                .antMatchers("/registration").permitAll()
                 .antMatchers("/**").permitAll()
+                .antMatchers("/h2-console/**").permitAll()
                 .antMatchers("/user").hasAnyRole("USER", "FAMILY_ADMIN", "GLOBAL_ADMIN")
                 .antMatchers("/fa").hasAnyRole("FAMILY_ADMIN", "GLOBAL_ADMIN")
                 .antMatchers("/ga").hasRole("GLOBAL_ADMIN")
                 .and()
                 .formLogin()
-                .loginPage("/login")
+                .loginProcessingUrl("/login")
                 .defaultSuccessUrl("/families")
                 .failureUrl("/login?error=true")
                 .permitAll()
@@ -38,10 +38,12 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .logoutSuccessUrl("/login?logout=true")
                 .invalidateHttpSession(true)
                 .permitAll()
-                .and().httpBasic()
-                .and().sessionManagement().disable()
+                .and()
+                .sessionManagement().disable()
                 .csrf()
                 .disable();
+        http
+                .headers().frameOptions().disable();
 
     }
 

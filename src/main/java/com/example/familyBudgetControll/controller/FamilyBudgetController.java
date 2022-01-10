@@ -64,31 +64,31 @@ public class FamilyBudgetController {
         return service.withdraw(userId, sumToWithdraw);
     }
 
-    @PreAuthorize("hasRole('GLOBAL_ADMIN')")
+    //@PreAuthorize("hasRole('GLOBAL_ADMIN')")
     @PutMapping("/ga/family{familyId}_balance/set_limit")
     @ResponseBody
-    public WithdrawLimit setLimitForFamily(@PathVariable Long familyId, WithdrawLimitDTO limit) {
+    public WithdrawLimit setLimitForFamily(@PathVariable Long familyId, @RequestBody WithdrawLimitDTO limit) {
         return service.setWithdrawLimitForFamily(familyId, limit);
     }
 
-    @PreAuthorize("hasRole('GLOBAL_ADMIN')")
+    //@PreAuthorize("hasRole('GLOBAL_ADMIN')")
     @PutMapping("/ga/user{userId}/set_limit")
     @ResponseBody
-    public WithdrawLimit setLimitForUser(@PathVariable Long userId, WithdrawLimitDTO limit) {
+    public WithdrawLimit setLimitForUser(@PathVariable Long userId, @RequestBody WithdrawLimitDTO limit) {
         return service.setWithdrawLimitForUser(userId, limit);
     }
 
-    @RolesAllowed({"GLOBAL_ADMIN", "FAMILY_ADMIN"})
-    @PutMapping("/fa/family/set_limit/family/user{userId}")
+    //@RolesAllowed({"GLOBAL_ADMIN", "FAMILY_ADMIN"})
+    @PutMapping("/fa/family/set_limit/family{familyId}")
     @ResponseBody
-    public WithdrawLimit setLimitForFamilyByAdmin(Long adminId, @RequestBody WithdrawLimitDTO limit) {
-        return service.setFamilyLimitByAdmin(adminId, limit);
+    public WithdrawLimit setLimitForFamilyByAdmin(@PathVariable Long familyId, @RequestBody WithdrawLimitDTO limit) {
+        return service.setFamilyLimitByAdmin(familyId, limit);
     }
 
-    @RolesAllowed({"GLOBAL_ADMIN", "FAMILY_ADMIN"})
-    @PutMapping("/fa/family/set_limit/user/user{userToSetLimit}")
+    //@RolesAllowed({"GLOBAL_ADMIN", "FAMILY_ADMIN"})
+    @PutMapping("/fa/family/set_limit/user{userId}")
     @ResponseBody
-    public WithdrawLimit setLimitForUserInFamilyByFamilyAdmin(@PathVariable Long userToSetLimit, @RequestBody WithdrawLimitDTO limit) {
-        return service.setLimitForUserByAdmin(userToSetLimit, limit);
+    public WithdrawLimit setLimitForUserInFamilyByFamilyAdmin(@PathVariable Long userId, @RequestBody WithdrawLimitDTO limit) {
+        return service.setLimitForUserByAdmin(userId, limit);
     }
 }

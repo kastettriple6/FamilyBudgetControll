@@ -10,9 +10,10 @@ import java.util.Collection;
 @Setter
 @Getter
 @Entity
+@Table(name = "role")
 public class Role implements GrantedAuthority {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
     @ManyToMany(mappedBy = "roles")
@@ -27,7 +28,7 @@ public class Role implements GrantedAuthority {
                     name = "privilege_id", referencedColumnName = "id"))
     private Collection<Privilege> privileges;
 
-    public Role(String role_user) {
+    public Role(String role) {
     }
 
     @Override

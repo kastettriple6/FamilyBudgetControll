@@ -42,14 +42,8 @@ public class FamilyBudgetService {
         userEntity.setId(userDTO.getId());
         userEntity.setUserName(userDTO.getUserName());
         userEntity.setPassword(encoder.encode(userDTO.getPassword()));
-        userEntity.setFirstName(userDTO.getFirstName());
-        userEntity.setLastName(userDTO.getLastName());
 
         WithdrawLimit limit = new WithdrawLimit();
-        limit.setDateForLimit(LocalDate.of(1970, 1, 1));
-        limit.setLimitPerDay(1000d);
-        limit.setLimitForSingleWithdraw(1000d);
-        limit.setLimitByDate(1000d);
 
         limitRepository.save(limit);
 
@@ -64,6 +58,20 @@ public class FamilyBudgetService {
         return userRepository.findByUserName(userEntity.getUserName());
     }
 
+    public Family createFamily(FamilyDTO familyDTO) {
+        Family familyEntity = new Family();
+        familyEntity.setName(familyDTO.getName());
+        familyEntity.setBalance(0d);
+        familyEntity.setSumOfWithdrawsByDay(0d);
+
+        WithdrawLimit limit = new WithdrawLimit();
+
+        limitRepository.save(limit);
+
+        familyEntity.setLimit(limit);
+        return familyRepository.save(familyEntity);
+    }
+
     public List<Users> putUserToFamilyList(Long userId, Long familyId) {
         Users userEntity = userRepository.findById(userId).orElseThrow(IllegalArgumentException::new);
         Family familyEntity = familyRepository.findById(familyId).orElseThrow(IllegalArgumentException::new);
@@ -72,29 +80,18 @@ public class FamilyBudgetService {
         return familyEntity.getUsers();
     }
 
-    public Family createFamily(FamilyDTO familyDTO) {
-        Family familyEntity = new Family();
-        familyEntity.setName(familyDTO.getName());
-        familyEntity.setBalance(0d);
-        familyEntity.setSumOfWithdrawsByDay(0d);
-        return familyRepository.save(familyEntity);
-    }
-
     public List<Users> checkFamilyList(Long familyId) {
         Family familyEntity = familyRepository.findById(familyId).orElseThrow(IllegalArgumentException::new);
-        Comparator<Users> userComparator = new Comparator<Users>() {
-            @Override
-            public int compare(Users o1, Users o2) {
-                int fComp = o1.getFirstName().compareTo(o2.getFirstName());
+        Comparator<Users> userComparator = (o1, o2) -> {
+            int fComp = o1.getUserName().compareTo(o2.getUserName());
 
-                if (fComp != 0) {
-                    return fComp;
-                }
-
-                Integer r1 = o1.getRoles().size();
-                Integer r2 = o2.getRoles().size();
-                return r1.compareTo(r2);
+            if (fComp != 0) {
+                return fComp;
             }
+
+            Integer r1 = o1.getRoles().size();
+            Integer r2 = o2.getRoles().size();
+            return r1.compareTo(r2);
         };
         List<Users> familyMembers = familyEntity.getUsers();
         familyMembers.sort(userComparator);
@@ -142,10 +139,15 @@ public class FamilyBudgetService {
 
         Family familyEntity = familyRepository.findById(familyId).orElseThrow(IllegalArgumentException::new);
         WithdrawLimit limitForFamily = new WithdrawLimit();
-        limitForFamily.setDateForLimit(limit.getDateForLimit());
+        if(limit.getDateForLimit() == null) {
+            limitForFamily.setDateForLimit(LocalDate.of(1970, 1, 1));
+        } else {
+            limitForFamily.setDateForLimit(limit.getDateForLimit());
+        }
         limitForFamily.setLimitForSingleWithdraw(limit.getLimitForSingleWithdraw());
         limitForFamily.setLimitPerDay(limit.getLimitPerDay());
         limitForFamily.setLimitByDate(limit.getLimitByDate());
+        limitForFamily.setFamily(familyRepository.getById(familyId));
 
         limitRepository.save(limitForFamily);
 
@@ -157,10 +159,15 @@ public class FamilyBudgetService {
     public WithdrawLimit setWithdrawLimitForUser(Long userId, WithdrawLimitDTO limit) {
         Users userEntity = userRepository.findById(userId).orElseThrow(IllegalArgumentException::new);
         WithdrawLimit limitForUser = new WithdrawLimit();
-        limitForUser.setDateForLimit(limit.getDateForLimit());
+        if(limit.getDateForLimit() == null) {
+            limitForUser.setDateForLimit(LocalDate.of(1970, 1, 1));
+        } else {
+            limitForUser.setDateForLimit(limit.getDateForLimit());
+        }
         limitForUser.setLimitForSingleWithdraw(limit.getLimitForSingleWithdraw());
         limitForUser.setLimitPerDay(limit.getLimitPerDay());
         limitForUser.setLimitByDate(limit.getLimitByDate());
+        limitForUser.setUser(userRepository.getById(userId));
 
         limitRepository.save(limitForUser);
 
@@ -173,10 +180,17 @@ public class FamilyBudgetService {
     public WithdrawLimit setFamilyLimitByAdmin(Long familyId, WithdrawLimitDTO limit) {
         Family neededFamily = familyRepository.findById(familyId).orElseThrow(IllegalArgumentException::new);
         WithdrawLimit limitForFamily = new WithdrawLimit();
-        limitForFamily.setDateForLimit(limit.getDateForLimit());
+        if(limit.getDateForLimit() == null) {
+            limitForFamily.setDateForLimit(LocalDate.of(1970, 1, 1));
+        } else {
+            limitForFamily.setDateForLimit(limit.getDateForLimit());
+        }
         limitForFamily.setLimitForSingleWithdraw(limit.getLimitForSingleWithdraw());
         limitForFamily.setLimitPerDay(limit.getLimitPerDay());
         limitForFamily.setLimitByDate(limit.getLimitByDate());
+        limitForFamily.setFamily(familyRepository.getById(familyId));
+
+        limitRepository.save(limitForFamily);
 
         neededFamily.setLimit(limitForFamily);
 
@@ -188,10 +202,17 @@ public class FamilyBudgetService {
     public WithdrawLimit setLimitForUserByAdmin(Long userId, WithdrawLimitDTO limit) {
         Users userToSetLimit = userRepository.findById(userId).orElseThrow(IllegalArgumentException::new);
         WithdrawLimit limitForUser = new WithdrawLimit();
-        limitForUser.setDateForLimit(limit.getDateForLimit());
+        if(limit.getDateForLimit() == null) {
+            limitForUser.setDateForLimit(LocalDate.of(1970, 1, 1));
+        } else {
+            limitForUser.setDateForLimit(limit.getDateForLimit());
+        }
         limitForUser.setLimitForSingleWithdraw(limit.getLimitForSingleWithdraw());
         limitForUser.setLimitPerDay(limit.getLimitPerDay());
         limitForUser.setLimitByDate(limit.getLimitByDate());
+        limitForUser.setUser(userRepository.getById(userId));
+
+        limitRepository.save(limitForUser);
 
         userToSetLimit.setLimit(limitForUser);
 
